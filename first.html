@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.2/css/bulma.min.css">
+  <link rel="shortcut icon" href="favicon.ico" />
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils@0.1/control_utils.css" crossorigin="anonymous">
+  <link rel="stylesheet" type="text/css" href="demo.css" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.1/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils@0.1/control_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.1/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.1/face_mesh.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+
+  <nav class="navbar" role="navigation" aria-label="main navigation">
+    <div class="navbar-brand">
+      
+  
+      <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </a>
+    </div>
+  
+    <div id="navbarBasicExample" class="navbar-menu">
+      <div class="navbar-start">
+  
+        <a class="navbar-item">
+          Face Mesh
+        </a>
+        </div>
+      </div>
+  
+    </div>
+  </nav>
+
+  <!-- CONTENTS -->
+  <div class="container" style="margin-top: 20px;">
+
+    <div class="columns">
+      
+      <!-- WEBCAM INPUT -->
+      <div class="column">
+        <article class="panel is-info">
+          <p class="panel-heading">
+            Webcam Input
+          </p>
+          <div class="panel-block">
+            <video class="input_video2"></video>
+          </div>
+        </article>
+      </div>
+
+      <!-- MEDIAPIPE OUTPUT -->
+      <div class="column">
+        <article class="panel is-info">
+          <p class="panel-heading">
+            Mediapipe Face Mesh
+          </p>
+          <div class="panel-block">
+            <canvas class="output2" width="480px" height="480px"></canvas>
+          </div>
+        </article>
+      </div>
+    </div>
+    
+    <div class="loading">
+      <div class="spinner"></div>
+    </div>
+  <div style="visibility: hidden;" class="control2">
+  </div>
+  
+  <script type="text/javascript" src="./faceMesh.js"></script>
+  <script type="text/javascript">
+    const video2 = document.getElementsByClassName('input_video2')[0];
+    const out2 = document.getElementsByClassName('output2')[0];
+    const canvasCtx = out2.getContext('2d');
+    const spinner = document.querySelector('.loading');
+    spinner.ontransitionend = () => {
+      spinner.style.display = 'none';
+    };
+
+    function onResultsFaceMesh(results) {
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, out2.width, out2.height);
+      canvasCtx.drawImage(results.image, 0, 0, out2.width, out2.height);
+      
+      if (results.multiFaceLandmarks) {
+        for (const landmarks of results.multiFaceLandmarks) {
+          drawConnectors(
+            canvasCtx, landmarks, FACEMESH_TESSELATION,
+            {color: '#30FF30', lineWidth: 1});
+          drawConnectors(
+            canvasCtx, landmarks, FACEMESH_RIGHT_EYE,
+            {color: '#30FF30'});
+          drawConnectors(
+            canvasCtx, landmarks, FACEMESH_LEFT_EYE,
+            {color: '#30FF30'});
+        }
+      }
+      
+      canvasCtx.restore();
+    }
+
+    const faceMesh = new FaceMesh({locateFile: (file) => {
+      return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.1/${file}`;
+    }});
+    faceMesh.onResults(onResultsFaceMesh);
+
+    const camera = new Camera(video2, {
+      onFrame: async () => {
+        await faceMesh.send({image: video2});
+      },
+      width: 480,
+      height: 480
+    });
+    camera.start();
+  </script>
+</body>
+</html>
